@@ -5,6 +5,20 @@ import AICenter from './pages/AICenter';
 import FeaturePage from './components/FeaturePage';
 import { featureConfigs } from './featureConfigs';
 
+// // === Batch 02 Gaps & Frontend Mounts ===
+import CfCredentialTrustScoring from './pages/CfCredentialTrustScoring';
+import CfPrivacyPreservingVerification from './pages/CfPrivacyPreservingVerification';
+import CfCrossChainCredentialBridging from './pages/CfCrossChainCredentialBridging';
+import CfRevocationMonitoring from './pages/CfRevocationMonitoring';
+import GapMissingVerifyCredentialValidateIdentityIssueCredential from './pages/GapMissingVerifyCredentialValidateIdentityIssueCredential';
+import GapNoCredentialIssuerVerifierWorkflowRoutes from './pages/GapNoCredentialIssuerVerifierWorkflowRoutes';
+import GapNoBlockchainIntegrationEthereumHyperledgerDid from './pages/GapNoBlockchainIntegrationEthereumHyperledgerDid';
+import GapNoDidDecentralizedIdentifierResolutionModule from './pages/GapNoDidDecentralizedIdentifierResolutionModule';
+import GapNoPresentationProofGeneration from './pages/GapNoPresentationProofGeneration';
+import GapNoWebhooks from './pages/GapNoWebhooks';
+import GapNoPaymentBillingModule from './pages/GapNoPaymentBillingModule';
+import GapNoNotificationsSystem from './pages/GapNoNotificationsSystem';
+
 const sidebarItems = [
   { id: 'dashboard', label: 'Dashboard', icon: 'grid' },
   { id: 'divider1', type: 'divider', label: 'Identity Management' },

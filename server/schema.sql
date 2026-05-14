@@ -228,3 +228,19 @@ CREATE TABLE audit_logs (
   ai_analysis TEXT,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- 15. AI Results (durable AI output store with JSONB)
+DROP TABLE IF EXISTS ai_results CASCADE;
+CREATE TABLE ai_results (
+  id SERIAL PRIMARY KEY,
+  entity_type VARCHAR(100) NOT NULL,
+  entity_id INTEGER NOT NULL,
+  analysis_type VARCHAR(100) NOT NULL,
+  content TEXT,
+  result_json JSONB DEFAULT '{}'::jsonb,
+  ai_model VARCHAR(200),
+  prompt_used TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_ai_results_entity ON ai_results(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_ai_results_created ON ai_results(created_at DESC);

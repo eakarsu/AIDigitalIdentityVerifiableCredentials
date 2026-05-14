@@ -1,10 +1,12 @@
 const express = require('express');
 const { callOpenRouter } = require('../openrouter');
 const pool = require('../db');
+const authenticateToken = require('../middleware/auth');
+const { aiRateLimiter } = require('../middleware/rateLimiter');
 const router = express.Router();
 
 // AI Identity Verification
-router.post('/verify-identity', async (req, res) => {
+router.post('/verify-identity', authenticateToken, aiRateLimiter, async (req, res) => {
   try {
     const { identityData } = req.body;
     const prompt = `Analyze this digital identity for verification. Assess authenticity, completeness, and risk factors. Provide a verification score (0-100), detailed findings, and recommendations.
@@ -27,7 +29,7 @@ Provide structured analysis with:
 });
 
 // AI Credential Validator
-router.post('/validate-credential', async (req, res) => {
+router.post('/validate-credential', authenticateToken, aiRateLimiter, async (req, res) => {
   try {
     const { credentialData } = req.body;
     const prompt = `Validate this verifiable credential. Check for compliance with W3C VC Data Model, assess the issuer trustworthiness, and verify credential integrity.
@@ -51,7 +53,7 @@ Provide structured validation with:
 });
 
 // AI Risk Assessment
-router.post('/assess-risk', async (req, res) => {
+router.post('/assess-risk', authenticateToken, aiRateLimiter, async (req, res) => {
   try {
     const { entityData, entityType } = req.body;
     const prompt = `Perform a comprehensive risk assessment for this ${entityType || 'entity'} in the context of digital identity and verifiable credentials.
@@ -76,7 +78,7 @@ Provide:
 });
 
 // AI Fraud Detection
-router.post('/detect-fraud', async (req, res) => {
+router.post('/detect-fraud', authenticateToken, aiRateLimiter, async (req, res) => {
   try {
     const { transactionData } = req.body;
     const prompt = `Analyze this digital identity/credential transaction for potential fraud indicators. Apply advanced fraud detection heuristics.
@@ -101,7 +103,7 @@ Provide:
 });
 
 // AI Compliance Checker
-router.post('/check-compliance', async (req, res) => {
+router.post('/check-compliance', authenticateToken, aiRateLimiter, async (req, res) => {
   try {
     const { entityData, framework } = req.body;
     const prompt = `Perform a compliance check for this entity against the ${framework || 'GDPR, eIDAS, and W3C VC'} framework(s) in the context of digital identity and verifiable credentials.
@@ -126,7 +128,7 @@ Provide:
 });
 
 // AI DID Resolver & Analyzer
-router.post('/analyze-did', async (req, res) => {
+router.post('/analyze-did', authenticateToken, aiRateLimiter, async (req, res) => {
   try {
     const { didDocument } = req.body;
     const prompt = `Analyze this DID (Decentralized Identifier) document. Assess its structure, security, and compliance with W3C DID Core specification.
@@ -151,9 +153,9 @@ Provide:
 });
 
 // AI Trust Score Calculator
-router.post('/calculate-trust', async (req, res) => {
+router.post('/calculate-trust', authenticateToken, aiRateLimiter, async (req, res) => {
   try {
-    const { entityData } = req.body;
+    const { entityData, identity_id } = req.body;
     const prompt = `Calculate a comprehensive trust score for this entity in the digital identity ecosystem. Consider multiple trust dimensions.
 
 Entity Data: ${JSON.stringify(entityData)}
@@ -172,14 +174,56 @@ Provide:
 6. Trust Level Classification (Untrusted/Low/Medium/High/Very High)`;
 
     const result = await callOpenRouter(prompt);
-    res.json({ analysis: result });
+
+    // Parse trust score and write back if identity_id provided
+    let trustScore = null;
+    if (identity_id && result.content) {
+      const scoreMatch = result.content.match(/Overall Trust Score[:\s]+\**(\d+)\**/i)
+        || result.content.match(/Trust Score[:\s]+\**(\d+)\**/i)
+        || result.content.match(/\b(\d{1,3})\s*\/\s*100\b/);
+      if (scoreMatch) {
+        trustScore = Math.min(100, Math.max(0, parseInt(scoreMatch[1])));
+        try {
+          await pool.query(
+            'UPDATE digital_identities SET ai_trust_score = $1 WHERE id = $2',
+            [trustScore, identity_id]
+          );
+
+          // If trust score < 30, auto-create risk_assessment and fraud_alert records
+          if (trustScore < 30) {
+            await pool.query(`
+              INSERT INTO risk_assessments (entity_type, entity_id, risk_level, risk_score, risk_factors, recommendations)
+              VALUES ('digital_identity', $1, 'high', $2, $3, $4)
+            `, [
+              identity_id,
+              100 - trustScore,
+              JSON.stringify([`AI trust score critically low: ${trustScore}/100`]),
+              JSON.stringify(['Immediate identity review required', 'Suspend active credentials pending investigation'])
+            ]);
+
+            await pool.query(`
+              INSERT INTO fraud_alerts (entity_type, entity_id, alert_type, severity, description, indicators, status)
+              VALUES ('digital_identity', $1, 'low_trust_score', 'high', $2, $3, 'open')
+            `, [
+              identity_id,
+              `Automated alert: AI trust score below threshold (${trustScore}/100). Potential fraud or identity integrity issue.`,
+              JSON.stringify([`Trust score: ${trustScore}/100`, 'Score below 30 threshold', 'Automated detection'])
+            ]);
+          }
+        } catch (writeErr) {
+          console.error('Trust score write-back error:', writeErr.message);
+        }
+      }
+    }
+
+    res.json({ analysis: result, trust_score_applied: trustScore, identity_id: identity_id || null });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 // AI Credential Generator
-router.post('/generate-credential', async (req, res) => {
+router.post('/generate-credential', authenticateToken, aiRateLimiter, async (req, res) => {
   try {
     const { credentialType, subjectData } = req.body;
     const prompt = `Generate a W3C-compliant Verifiable Credential template for the following:
@@ -205,7 +249,7 @@ Generate:
 });
 
 // AI Schema Analyzer
-router.post('/analyze-schema', async (req, res) => {
+router.post('/analyze-schema', authenticateToken, aiRateLimiter, async (req, res) => {
   try {
     const { schemaData } = req.body;
     const prompt = `Analyze this credential schema for completeness, security, and interoperability in the digital identity ecosystem.
@@ -230,7 +274,7 @@ Provide:
 });
 
 // AI Privacy Advisor
-router.post('/privacy-advice', async (req, res) => {
+router.post('/privacy-advice', authenticateToken, aiRateLimiter, async (req, res) => {
   try {
     const { sharingContext } = req.body;
     const prompt = `Provide privacy advice for this credential sharing scenario in the digital identity context.
@@ -255,7 +299,7 @@ Provide:
 });
 
 // AI Anomaly Detector (for audit logs)
-router.post('/detect-anomalies', async (req, res) => {
+router.post('/detect-anomalies', authenticateToken, aiRateLimiter, async (req, res) => {
   try {
     const logs = await pool.query('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 50');
     const prompt = `Analyze these audit logs from a digital identity platform for anomalies, suspicious patterns, and security concerns.
@@ -280,7 +324,7 @@ Provide:
 });
 
 // AI Presentation Matcher
-router.post('/match-presentation', async (req, res) => {
+router.post('/match-presentation', authenticateToken, aiRateLimiter, async (req, res) => {
   try {
     const { request, availableCredentials } = req.body;
     const prompt = `Match available credentials to this presentation request. Determine which credentials satisfy the verifier's requirements with selective disclosure.
@@ -306,7 +350,7 @@ Provide:
 });
 
 // Dashboard AI Summary
-router.post('/dashboard-summary', async (req, res) => {
+router.post('/dashboard-summary', authenticateToken, aiRateLimiter, async (req, res) => {
   try {
     const [identities, credentials, fraudAlerts, riskAssessments, compliance] = await Promise.all([
       pool.query('SELECT COUNT(*), COUNT(*) FILTER (WHERE status = \'active\') as active FROM digital_identities'),

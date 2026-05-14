@@ -3,7 +3,7 @@ require('dotenv').config();
 
 async function callOpenRouter(prompt, systemPrompt = 'You are an expert AI assistant specializing in digital identity, verifiable credentials, decentralized identifiers, and identity security. Provide detailed, professional responses.') {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  const model = process.env.OPENROUTER_MODEL || 'anthropic/claude-haiku-4.5';
+  const model = process.env.OPENROUTER_MODEL || 'anthropic/claude-3-5-sonnet-20241022';
 
   const body = JSON.stringify({
     model,

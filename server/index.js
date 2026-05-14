@@ -1,16 +1,33 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const aiCenterRoutes = require('./routes/ai-center');
+const aiNewRoutes = require('./routes/aiNew');
 const createCrudRouter = require('./routes/crud');
 const authMiddleware = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+
+const allowedOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || 'http://localhost:5173,http://localhost:3000')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true
+}));
+
 app.use(express.json({ limit: '10mb' }));
 
 // Auth routes (no auth required)
@@ -19,6 +36,17 @@ app.use('/api/auth', authRoutes);
 // AI Center routes
 app.use('/api/ai-center', aiCenterRoutes);
 
+// Extended AI routes
+app.use('/api/ai', aiNewRoutes);
+
+
+
+
+
+app.use('/api/ai', require('./routes/revocationMonitor'));
+app.use('/api/ai', require('./routes/crosschainBridge'));
+app.use('/api/ai', require('./routes/zkVerify'));
+app.use('/api/ai', require('./routes/trustScoring'));
 // Feature CRUD routes with AI integration
 app.use('/api/digital-identities', createCrudRouter('digital_identities', (item) =>
   `Analyze this digital identity for security, trust, and compliance. Identity: ${item.identity_name}, Type: ${item.identity_type}, Status: ${item.status}, Trust Score: ${item.ai_trust_score}, Metadata: ${JSON.stringify(item.metadata)}. Provide security assessment, trust evaluation, and recommendations.`,
@@ -131,6 +159,56 @@ app.get('/api/dashboard/stats', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🔐 AI Digital Identity Server running on port ${PORT}`);
+// Ensure ai_results JSONB store exists (idempotent)
+async function ensureAiResultsTable() {
+  const pool = require('./db');
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ai_results (
+        id SERIAL PRIMARY KEY,
+        entity_type VARCHAR(100) NOT NULL,
+        entity_id INTEGER NOT NULL,
+        analysis_type VARCHAR(100) NOT NULL,
+        content TEXT,
+        result_json JSONB DEFAULT '{}'::jsonb,
+        ai_model VARCHAR(200),
+        prompt_used TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_ai_results_entity ON ai_results(entity_type, entity_id);
+      CREATE INDEX IF NOT EXISTS idx_ai_results_created ON ai_results(created_at DESC);
+    `);
+  } catch (err) {
+    console.warn('ai_results init warning:', err.message);
+  }
+}
+
+ensureAiResultsTable().finally(() => {
+// // === Batch 02 Gaps & Frontend Mounts ===
+app.use('/api/gap-missing-verify-credential-validate-identity-issue-credential', require('./routes/gap_missing_verify_credential_validate_identity_issue_credential'));
+
+// // === Batch 02 Gaps & Frontend Mounts ===
+app.use('/api/gap-no-credential-issuer-verifier-workflow-routes', require('./routes/gap_no_credential_issuer_verifier_workflow_routes'));
+
+// // === Batch 02 Gaps & Frontend Mounts ===
+app.use('/api/gap-no-blockchain-integration-ethereum-hyperledger-did', require('./routes/gap_no_blockchain_integration_ethereum_hyperledger_did'));
+
+// // === Batch 02 Gaps & Frontend Mounts ===
+app.use('/api/gap-no-did-decentralized-identifier-resolution-module', require('./routes/gap_no_did_decentralized_identifier_resolution_module'));
+
+// // === Batch 02 Gaps & Frontend Mounts ===
+app.use('/api/gap-no-presentation-proof-generation', require('./routes/gap_no_presentation_proof_generation'));
+
+// // === Batch 02 Gaps & Frontend Mounts ===
+app.use('/api/gap-no-webhooks', require('./routes/gap_no_webhooks'));
+
+// // === Batch 02 Gaps & Frontend Mounts ===
+app.use('/api/gap-no-payment-billing-module', require('./routes/gap_no_payment_billing_module'));
+
+// // === Batch 02 Gaps & Frontend Mounts ===
+app.use('/api/gap-no-notifications-system', require('./routes/gap_no_notifications_system'));
+
+  app.listen(PORT, () => {
+    console.log(`🔐 AI Digital Identity Server running on port ${PORT}`);
+  });
 });

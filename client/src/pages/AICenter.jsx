@@ -175,6 +175,144 @@ const aiFeatures = [
     dataKey: null,
     noInput: true,
   },
+  {
+    id: 'compliance-report',
+    title: 'AI Compliance Report Export',
+    description: 'Generate a PDF-ready compliance report for a framework',
+    icon: '📝',
+    color: 'lime',
+    endpoint: '/ai/compliance-report',
+    fields: [
+      { key: 'framework', label: 'Framework (GDPR, eIDAS, W3C_VC)', placeholder: 'GDPR' },
+    ],
+    dataKey: 'framework',
+    flatPayload: true,
+  },
+  {
+    id: 'credential-batch-validate',
+    title: 'AI Batch Credential Validator',
+    description: 'Validate up to 50 credentials in one batch',
+    icon: '📦',
+    color: 'emerald',
+    endpoint: '/ai/credential-batch-validate',
+    fields: [
+      { key: 'credential_ids', label: 'Credential IDs (comma-separated)', placeholder: '1,2,3,4' },
+    ],
+    dataKey: 'credential_ids',
+    csvIds: true,
+  },
+  {
+    id: 'identity-risk-report',
+    title: 'AI Identity Risk Report',
+    description: 'Generate a comprehensive risk narrative for one identity',
+    icon: '🛡️',
+    color: 'orange',
+    endpoint: '/ai/identity-risk-report',
+    fields: [
+      { key: 'identity_id', label: 'Identity ID', placeholder: '1' },
+    ],
+    dataKey: 'identity_id',
+    flatPayload: true,
+  },
+  {
+    id: 'revocation-impact',
+    title: 'AI Revocation Impact',
+    description: 'Predict downstream impact of revoking a credential',
+    icon: '🛑',
+    color: 'red',
+    endpoint: '/ai/revocation-impact',
+    fields: [
+      { key: 'credential_id', label: 'Credential ID', placeholder: '1' },
+    ],
+    dataKey: 'credential_id',
+    flatPayload: true,
+  },
+  {
+    id: 'credential-chain-analyzer',
+    title: 'AI Credential Chain Analyzer',
+    description: 'Analyze the credential chain rooted at a DID / issuer',
+    icon: '🔗',
+    color: 'cyan',
+    endpoint: '/ai/credential-chain-analyzer',
+    fields: [
+      { key: 'did_uri', label: 'DID URI (or leave blank to use Issuer)', placeholder: 'did:key:z6Mkh...' },
+      { key: 'issuer', label: 'Issuer (used if DID URI blank)', placeholder: 'did:web:mit.edu' },
+    ],
+    dataKey: 'anchorData',
+    flatPayload: true,
+  },
+  // ---------- Apply pass 5 — additive backlog tiles ----------
+  {
+    id: 'issuer-workflow',
+    title: 'Issuer Workflow',
+    description: 'Drive issuance state machine (draft → review → approved)',
+    icon: '📜',
+    color: 'indigo',
+    endpoint: '/ai/issuer-workflow',
+    fields: [
+      { key: 'credential_id', label: 'Credential ID', placeholder: '1' },
+      { key: 'action', label: 'Action (create | transition)', placeholder: 'create' },
+      { key: 'target_state', label: 'Target state (only for transition)', placeholder: 'review' },
+    ],
+    dataKey: 'workflow',
+    flatPayload: true,
+  },
+  {
+    id: 'verifier-workflow',
+    title: 'Verifier Workflow',
+    description: 'Record a verification outcome (pass/fail) and get follow-up advice',
+    icon: '✅',
+    color: 'emerald',
+    endpoint: '/ai/verifier-workflow',
+    fields: [
+      { key: 'credential_id', label: 'Credential ID', placeholder: '1' },
+      { key: 'presentation_id', label: 'Presentation ID (optional)', placeholder: '' },
+      { key: 'outcome', label: 'Outcome (pass | fail)', placeholder: 'pass' },
+    ],
+    dataKey: 'workflow',
+    flatPayload: true,
+  },
+  {
+    id: 'selective-disclosure',
+    title: 'Selective Disclosure (simulated)',
+    description: 'Plan a ZKP/SD-JWT-style selective disclosure (simulated only)',
+    icon: '🪪',
+    color: 'cyan',
+    endpoint: '/ai/selective-disclosure',
+    fields: [
+      { key: 'credential_id', label: 'Credential ID', placeholder: '1' },
+      { key: 'purpose', label: 'Purpose', placeholder: 'age verification' },
+      { key: 'requested_fields', label: 'Requested fields (comma-separated)', placeholder: 'name,age' },
+    ],
+    dataKey: 'plan_text',
+    flatPayload: true,
+  },
+  {
+    id: 'blockchain-anchor',
+    title: 'Blockchain Anchor (simulated)',
+    description: 'Plan an on-chain anchor for a credential. NEEDS-CREDS: BLOCKCHAIN_RPC_URL.',
+    icon: '⛓️',
+    color: 'orange',
+    endpoint: '/ai/blockchain-anchor',
+    fields: [
+      { key: 'credential_id', label: 'Credential ID', placeholder: '1' },
+    ],
+    dataKey: 'plan_text',
+    flatPayload: true,
+  },
+  {
+    id: 'status-list-check',
+    title: 'Status-List Check (simulated)',
+    description: 'Check W3C StatusList2021 entry for a credential. NEEDS-CREDS: STATUS_LIST_PROVIDER_URL.',
+    icon: '📊',
+    color: 'red',
+    endpoint: '/ai/status-list-check',
+    fields: [
+      { key: 'credential_id', label: 'Credential ID', placeholder: '1' },
+    ],
+    dataKey: 'report',
+    flatPayload: true,
+  },
 ];
 
 const colorMap = {
@@ -209,17 +347,38 @@ export default function AICenter() {
     setAiLoading(true);
     setAiResult(null);
     try {
-      const payload = selectedFeature.noInput
-        ? {}
-        : selectedFeature.dataKey === 'subjectData'
-          ? { credentialType: formData.credentialType, subjectData: formData }
-          : selectedFeature.dataKey === 'entityData' && selectedFeature.id === 'check-compliance'
-            ? { entityData: formData, framework: formData.framework }
-            : selectedFeature.dataKey === 'entityData' && selectedFeature.id === 'assess-risk'
-              ? { entityData: formData, entityType: formData.entityType }
-              : { [selectedFeature.dataKey]: formData };
+      let payload;
+      if (selectedFeature.noInput) {
+        payload = {};
+      } else if (selectedFeature.csvIds) {
+        // Convert CSV string -> array of integers (e.g., for credential-batch-validate)
+        const raw = formData[selectedFeature.dataKey] || '';
+        const ids = raw.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        payload = { [selectedFeature.dataKey]: ids };
+      } else if (selectedFeature.flatPayload) {
+        // Each field becomes a top-level key (with int coercion for *_id fields)
+        payload = {};
+        for (const f of selectedFeature.fields) {
+          const v = formData[f.key];
+          payload[f.key] = (f.key.endsWith('_id') && v) ? parseInt(v) : v;
+        }
+      } else if (selectedFeature.dataKey === 'subjectData') {
+        payload = { credentialType: formData.credentialType, subjectData: formData };
+      } else if (selectedFeature.dataKey === 'entityData' && selectedFeature.id === 'check-compliance') {
+        payload = { entityData: formData, framework: formData.framework };
+      } else if (selectedFeature.dataKey === 'entityData' && selectedFeature.id === 'assess-risk') {
+        payload = { entityData: formData, entityType: formData.entityType };
+      } else {
+        payload = { [selectedFeature.dataKey]: formData };
+      }
       const result = await apiPost(selectedFeature.endpoint, payload);
-      setAiResult(result.analysis);
+      // aiNew endpoints return content under .report or .validation_report or .risk_report
+      const analysis = result.analysis
+        || (result.report && { content: result.report, model: result.ai_response?.model, usage: result.ai_response?.usage })
+        || (result.validation_report && { content: result.validation_report, model: result.ai_response?.model, usage: result.ai_response?.usage })
+        || (result.risk_report && { content: result.risk_report, model: result.ai_response?.model, usage: result.ai_response?.usage })
+        || { content: JSON.stringify(result, null, 2) };
+      setAiResult(analysis);
     } catch (err) {
       setAiResult({ content: 'Failed to get AI analysis. Please check your OpenRouter API key in .env file.' });
     } finally {
