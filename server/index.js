@@ -117,6 +117,7 @@ app.use('/api/audit-logs', createCrudRouter('audit_logs', (item) =>
   `Analyze this audit log entry: Action: ${item.action}, Entity: ${item.entity_type}, Actor: ${item.actor}, Details: ${JSON.stringify(item.details)}, Anomaly: ${item.ai_anomaly_flag}. Assess security implications and identify patterns.`,
   'Audit Log'
 ));
+app.use('/api/selective-disclosure-policy', require('./routes/selectiveDisclosurePolicy'));
 
 // Dashboard stats
 app.get('/api/dashboard/stats', async (req, res) => {

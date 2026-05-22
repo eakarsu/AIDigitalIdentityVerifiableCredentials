@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import AICenter from './pages/AICenter';
+import SelectiveDisclosurePolicy from './pages/SelectiveDisclosurePolicy';
 import FeaturePage from './components/FeaturePage';
 import { featureConfigs } from './featureConfigs';
 
@@ -41,6 +42,7 @@ const sidebarItems = [
   { id: 'audit-logs', label: 'Audit Trail', icon: 'file-text' },
   { id: 'divider5', type: 'divider', label: 'AI' },
   { id: 'ai-center', label: 'AI Center', icon: 'brain', special: true },
+  { id: 'selective-disclosure-policy', label: 'Disclosure Policy', icon: 'clipboard', special: true },
 ];
 
 function SidebarIcon({ name, className = "w-5 h-5" }) {
@@ -105,6 +107,9 @@ export default function App() {
     }
     if (currentPage === 'ai-center') {
       return <AICenter />;
+    }
+    if (currentPage === 'selective-disclosure-policy') {
+      return <SelectiveDisclosurePolicy />;
     }
     const config = featureConfigs[currentPage];
     if (config) {
