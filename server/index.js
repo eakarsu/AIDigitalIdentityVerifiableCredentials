@@ -11,6 +11,8 @@ const authMiddleware = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) throw new Error('JWT_SECRET must be configured with at least 32 characters');
+if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
@@ -118,6 +120,7 @@ app.use('/api/audit-logs', createCrudRouter('audit_logs', (item) =>
   'Audit Log'
 ));
 app.use('/api/selective-disclosure-policy', require('./routes/selectiveDisclosurePolicy'));
+app.use('/api/credential-lifecycle', require('./routes/credentialLifecycle'));
 
 // Dashboard stats
 app.get('/api/dashboard/stats', async (req, res) => {
@@ -160,56 +163,8 @@ app.get('/api/dashboard/stats', async (req, res) => {
   }
 });
 
-// Ensure ai_results JSONB store exists (idempotent)
-async function ensureAiResultsTable() {
-  const pool = require('./db');
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS ai_results (
-        id SERIAL PRIMARY KEY,
-        entity_type VARCHAR(100) NOT NULL,
-        entity_id INTEGER NOT NULL,
-        analysis_type VARCHAR(100) NOT NULL,
-        content TEXT,
-        result_json JSONB DEFAULT '{}'::jsonb,
-        ai_model VARCHAR(200),
-        prompt_used TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-      CREATE INDEX IF NOT EXISTS idx_ai_results_entity ON ai_results(entity_type, entity_id);
-      CREATE INDEX IF NOT EXISTS idx_ai_results_created ON ai_results(created_at DESC);
-    `);
-  } catch (err) {
-    console.warn('ai_results init warning:', err.message);
-  }
-}
-
-ensureAiResultsTable().finally(() => {
-// // === Batch 02 Gaps & Frontend Mounts ===
-app.use('/api/gap-missing-verify-credential-validate-identity-issue-credential', require('./routes/gap_missing_verify_credential_validate_identity_issue_credential'));
-
-// // === Batch 02 Gaps & Frontend Mounts ===
-app.use('/api/gap-no-credential-issuer-verifier-workflow-routes', require('./routes/gap_no_credential_issuer_verifier_workflow_routes'));
-
-// // === Batch 02 Gaps & Frontend Mounts ===
-app.use('/api/gap-no-blockchain-integration-ethereum-hyperledger-did', require('./routes/gap_no_blockchain_integration_ethereum_hyperledger_did'));
-
-// // === Batch 02 Gaps & Frontend Mounts ===
-app.use('/api/gap-no-did-decentralized-identifier-resolution-module', require('./routes/gap_no_did_decentralized_identifier_resolution_module'));
-
-// // === Batch 02 Gaps & Frontend Mounts ===
-app.use('/api/gap-no-presentation-proof-generation', require('./routes/gap_no_presentation_proof_generation'));
-
-// // === Batch 02 Gaps & Frontend Mounts ===
-app.use('/api/gap-no-webhooks', require('./routes/gap_no_webhooks'));
-
-// // === Batch 02 Gaps & Frontend Mounts ===
-app.use('/api/gap-no-payment-billing-module', require('./routes/gap_no_payment_billing_module'));
-
-// // === Batch 02 Gaps & Frontend Mounts ===
-app.use('/api/gap-no-notifications-system', require('./routes/gap_no_notifications_system'));
-
-  app.listen(PORT, () => {
-    console.log(`🔐 AI Digital Identity Server running on port ${PORT}`);
-  });
+// Generated gap routers are quarantined; standards and registry adapters must pass
+// conformance tests before they are exposed as product capabilities.
+app.listen(PORT, () => {
+  console.log(`🔐 AI Digital Identity Server running on port ${PORT}`);
 });

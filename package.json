@@ -9,7 +9,8 @@
     "client": "cd client && npm run dev",
     "dev": "concurrently \"npm run server:dev\" \"npm run client\"",
     "seed": "node server/seed.js",
-    "start": "bash start.sh"
+    "start": "bash start.sh",
+    "test": "node --test server/tests/*.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
