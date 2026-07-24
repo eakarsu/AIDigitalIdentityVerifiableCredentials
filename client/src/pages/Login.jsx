@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { login } from '../api';
 
+const demoPassword = import.meta.env.VITE_ENABLE_DEMO_CREDENTIAL_AUTOFILL === 'true'
+  ? import.meta.env.VITE_DEMO_PASSWORD || ''
+  : '';
+
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,10 +28,10 @@ export default function Login({ onLogin }) {
 
   const fillCredentials = (role) => {
     const creds = {
-      admin: { email: 'admin@identity.io', password: 'password123' },
-      issuer: { email: 'issuer@identity.io', password: 'password123' },
-      verifier: { email: 'verifier@identity.io', password: 'password123' },
-      user: { email: 'user@identity.io', password: 'password123' },
+      admin: { email: 'admin@identity.io', password: demoPassword },
+      issuer: { email: 'issuer@identity.io', password: demoPassword },
+      verifier: { email: 'verifier@identity.io', password: demoPassword },
+      user: { email: 'user@identity.io', password: demoPassword },
     };
     setEmail(creds[role].email);
     setPassword(creds[role].password);
@@ -92,16 +96,16 @@ export default function Login({ onLogin }) {
           <div className="mt-6 pt-6 border-t border-slate-700">
             <p className="text-sm text-slate-400 mb-3 text-center">Quick Login (Demo Accounts)</p>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => fillCredentials('admin')} className="px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-300 text-sm transition">
+              <button disabled={!demoPassword} onClick={() => fillCredentials('admin')} className="px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-300 text-sm transition disabled:opacity-50">
                 Admin
               </button>
-              <button onClick={() => fillCredentials('issuer')} className="px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-blue-300 text-sm transition">
+              <button disabled={!demoPassword} onClick={() => fillCredentials('issuer')} className="px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-blue-300 text-sm transition disabled:opacity-50">
                 Issuer
               </button>
-              <button onClick={() => fillCredentials('verifier')} className="px-3 py-2 bg-green-600/20 hover:bg-green-600/30 border border-green-500/30 rounded-lg text-green-300 text-sm transition">
+              <button disabled={!demoPassword} onClick={() => fillCredentials('verifier')} className="px-3 py-2 bg-green-600/20 hover:bg-green-600/30 border border-green-500/30 rounded-lg text-green-300 text-sm transition disabled:opacity-50">
                 Verifier
               </button>
-              <button onClick={() => fillCredentials('user')} className="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 rounded-lg text-amber-300 text-sm transition">
+              <button disabled={!demoPassword} onClick={() => fillCredentials('user')} className="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 rounded-lg text-amber-300 text-sm transition disabled:opacity-50">
                 User
               </button>
             </div>

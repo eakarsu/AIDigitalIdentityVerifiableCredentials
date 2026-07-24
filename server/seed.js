@@ -4,6 +4,12 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
+function requireDemoPassword() {
+  const password = process.env.DEMO_PASSWORD;
+  if (!password || password.length < 12) throw new Error('DEMO_PASSWORD must be at least 12 characters');
+  return password;
+}
+
 async function seed() {
   const client = await pool.connect();
   try {
@@ -13,7 +19,7 @@ async function seed() {
     console.log('Schema created successfully');
 
     // Seed users
-    const hashedPassword = await bcrypt.hash('password123', 10);
+    const hashedPassword = await bcrypt.hash(requireDemoPassword(), 10);
     await client.query(`
       INSERT INTO users (email, password, full_name, role) VALUES
       ('admin@identity.io', $1, 'Alex Administrator', 'admin'),
