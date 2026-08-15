@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import DecisionCenter from './pages/DecisionCenter';
 import AICenter from './pages/AICenter';
 import SelectiveDisclosurePolicy from './pages/SelectiveDisclosurePolicy';
 import FeaturePage from './components/FeaturePage';
@@ -22,6 +23,7 @@ import GapNoNotificationsSystem from './pages/GapNoNotificationsSystem';
 
 const sidebarItems = [
   { id: 'dashboard', label: 'Dashboard', icon: 'grid' },
+  { id: 'decision-center', label: 'Decision Center', icon: 'clipboard', special: true },
   { id: 'divider1', type: 'divider', label: 'Identity Management' },
   { id: 'digital-identities', label: 'Digital Identities', icon: 'fingerprint' },
   { id: 'did-documents', label: 'DID Documents', icon: 'link' },
@@ -104,6 +106,9 @@ export default function App() {
   const renderPage = () => {
     if (currentPage === 'dashboard') {
       return <Dashboard onNavigate={setCurrentPage} />;
+    }
+    if (currentPage === 'decision-center') {
+      return <DecisionCenter />;
     }
     if (currentPage === 'ai-center') {
       return <AICenter />;
