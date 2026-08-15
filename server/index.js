@@ -165,6 +165,8 @@ app.get('/api/dashboard/stats', async (req, res) => {
 
 // Generated gap routers are quarantined; standards and registry adapters must pass
 // conformance tests before they are exposed as product capabilities.
+app.use('/api', require('./routes/generatedFeatures').router);
+
 app.listen(PORT, () => {
   console.log(`🔐 AI Digital Identity Server running on port ${PORT}`);
 });
