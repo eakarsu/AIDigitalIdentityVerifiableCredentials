@@ -94,9 +94,9 @@ export default function Login({ onLogin }) {
 
           {/* Quick Login Buttons */}
           <div className="mt-6 pt-6 border-t border-slate-700">
-            <p className="text-sm text-slate-400 mb-3 text-center">Quick Login (Demo Accounts)</p>
+            <p className="text-sm text-slate-400 mb-3 text-center">Auto Fill Demo Credentials</p>
             <div className="grid grid-cols-2 gap-2">
-              <button disabled={!demoPassword} onClick={() => fillCredentials('admin')} className="px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-300 text-sm transition disabled:opacity-50">
+              <button disabled={!demoPassword} onClick={() => fillCredentials('admin')} aria-label="Auto Fill Demo Credentials" className="px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-300 text-sm transition disabled:opacity-50">
                 Admin
               </button>
               <button disabled={!demoPassword} onClick={() => fillCredentials('issuer')} className="px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-blue-300 text-sm transition disabled:opacity-50">
